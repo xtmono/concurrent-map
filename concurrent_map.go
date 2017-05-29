@@ -122,6 +122,21 @@ func (m ConcurrentMap) Remove(key interface{}) {
 	shard.Unlock()
 }
 
+// Callback to return boolean from remove condition
+type RemoveCb func(valueInMap interface{}) bool
+
+// Removes an element from the map when satisfied with RemoveCB
+func (m ConcurrentMap) RemoveIf(key interface{}, cb RemoveCb) {
+	// Try to get shard.
+	shard := m.GetShard(key)
+	shard.Lock()
+	v, ok := shard.items[key]
+	if ok && cb(v) {
+		delete(shard.items, key)
+	}
+	shard.Unlock()
+}
+
 // Removes an element from the map and returns it
 func (m ConcurrentMap) Pop(key interface{}) (v interface{}, exists bool) {
 	// Try to get shard.
